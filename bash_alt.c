@@ -25,7 +25,7 @@ void handle_signal(int signo)
 {
 	int write_bytes;
 	write_bytes = write(1, MESS_BASH_NL, sizeof(MESS_BASH_NL));
-	if(read_bytes == 1)
+	if (read_bytes == 1)
 		write_bytes = write(1, MESS_BASH_WAIT_COMMAND,
 				sizeof(MESS_BASH_WAIT_COMMAND));
 	else
@@ -39,11 +39,11 @@ void fill_argv(char *tmp_argv)
 	int index = 0;
 	char ret[STRING_MAX];
 	memset(ret, 0, STRING_MAX);
-	while(*foo != 0) {
-		if(index == MAX_ARGS)
+	while (*foo != 0) {
+		if (index == MAX_ARGS)
 			break;
-		if(*foo == ' ') {
-			if(argv_child[index] == NULL)
+		if (*foo == ' ') {
+			if (argv_child[index] == NULL)
 				argv_child[index] = (char *) malloc(
 					sizeof(char) * strlen(ret) + 1);
 			else
@@ -66,26 +66,26 @@ void get_path_string(char **tmp_envp, char *bin_path)
 {
 	int index = 0;
 	char *tmp;
-	while(1) {
+	while (1) {
 		tmp = strstr(tmp_envp[index], "PATH=/");
-		if(tmp != NULL && !strstr(tmp_envp[index], "_PATH=/"))
+		if (tmp != NULL && !strstr(tmp_envp[index], "_PATH=/"))
 			break;
 		else
 			index++;
-	}	
-        strncpy(bin_path, tmp, strlen(tmp));
+	}
+	strncpy(bin_path, tmp, strlen(tmp));
 }
 
-void insert_path_str_to_search(char *path_str) 
+void insert_path_str_to_search(char *path_str)
 {
 	int index = 0;
 	char *tmp = path_str;
 	char ret[STRING_MAX];
-	while(*tmp != '=')
+	while (*tmp != '=')
 		tmp++;
 	tmp++;
-	while(1) {
-		if(*tmp == ':' || *tmp == '\0') {
+	while (1) {
+		if (*tmp == ':' || *tmp == '\0') {
 			strncat(ret, "/", 1);
 			search_path[index] = (char *) malloc(sizeof(char) *
 				(strlen(ret) + 1));
@@ -93,7 +93,7 @@ void insert_path_str_to_search(char *path_str)
 			strncat(search_path[index], "\0", 1);
 			index++;
 			memset(ret, 0, sizeof(ret));
-			if(*tmp == '\0')
+			if (*tmp == '\0')
 				break;
 		} else
 			strncat(ret, tmp, 1);
@@ -106,11 +106,12 @@ int attach_path()
 	char ret[STRING_MAX];
 	int index;
 	int fd;
-	for(index = 0; search_path[index] != NULL; index++) {
+	for (index = 0; search_path[index] != NULL; index++) {
 		memset(ret, 0, sizeof(ret));
 		strcpy(ret, search_path[index]);
 		strncat(ret, argv_child[0], strlen(argv_child[0]));
-		if((fd = open(ret, O_RDONLY)) > 0) {
+		fd = open(ret, O_RDONLY);
+		if (fd > 0) {
 			free(argv_child[0]);
 			argv_child[0] = (char *)malloc(sizeof(char) * strlen(ret) + 1);
 			strncpy(argv_child[0], ret, strlen(ret));
@@ -144,49 +145,51 @@ int main(int argc, char *argv[], char *envp[])
 				sizeof(MESS_BASH_WAIT_COMMAND));
 		read_bytes = 1;
 		read_bytes = read(0, exec_file_name, STRING_MAX);
-		if(read_bytes != 1)
-		{
+		if (read_bytes != 1) {
 			exec_file_name[read_bytes-1] = 0;
-			if(flag_exit = strcmp(exec_file_name, COMMAND_BASH_CLOSE))
-				switch(pid = fork()) {
-					case -1:
-						perror("fork");
-						exit(1);
-					case 0:
-						fill_argv(exec_file_name);
-						if(argv_child[0][0] != '/') {
-							if((fd = open(argv_child[0], O_RDONLY)) > 0) {
-								close(fd);
-							} else if(attach_path() != 0) {
-								printf("0 %s: %s\n",
-									argv_child[0],
-									MESS_BASH_COMMAND_MISS);
-								exit(1);
-							}
-						} else {
-							if((fd = open(argv_child[0], O_RDONLY)) > 0) {
-								close(fd);
-							} else {
-								printf("1 %s: %s\n",
-									argv_child[0],
-									MESS_BASH_COMMAND_MISS);
-								exit(1);
-							}
-						}
-						exec_status = execve(argv_child[0],
-							argv_child, envp);
-						if (exec_status < 0) {
-							printf("2 %s: %s\n",
+			flag_exit = strcmp(exec_file_name, COMMAND_BASH_CLOSE);
+			if (flag_exit)
+				switch (pid = fork()) {
+				case -1:
+					perror("fork");
+					exit(1);
+				case 0:
+					fill_argv(exec_file_name);
+					if (argv_child[0][0] != '/') {
+						fd = open(argv_child[0], O_RDONLY);
+						if (fd > 0) {
+							close(fd);
+						} else if (attach_path() != 0) {
+							printf("0 %s: %s\n",
 								argv_child[0],
 								MESS_BASH_COMMAND_MISS);
 							exit(1);
 						}
-						exit(0);
-					default:
-						wait(NULL);
+					} else {
+						fd = open(argv_child[0], O_RDONLY);
+						if (fd > 0) {
+							close(fd);
+						} else {
+							printf("1 %s: %s\n",
+								argv_child[0],
+								MESS_BASH_COMMAND_MISS);
+							exit(1);
+						}
+					}
+					exec_status = execve(argv_child[0],
+						argv_child, envp);
+					if (exec_status < 0) {
+						printf("2 %s: %s\n",
+							argv_child[0],
+							MESS_BASH_COMMAND_MISS);
+						exit(1);
+					}
+					exit(0);
+				default:
+					wait(NULL);
 				}
 		}
-	} while(flag_exit);
+	} while (flag_exit);
 	for (index = 0; argv_child[index] != NULL; index++)
 		free(argv_child[index]);
 	for (index = 0; search_path[index] != NULL; index++)
