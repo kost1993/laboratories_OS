@@ -2,6 +2,7 @@
 
 int main(int argc, int *argv[])
 {
-	printf("Hello world of process.\n");
+	while(1)
+		printf("Hello world of process.\n");
 	return 0;
 }
