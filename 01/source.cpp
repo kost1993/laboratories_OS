@@ -37,7 +37,7 @@ int main(int argc,char *argv[]) {
 	ssize_t written_bytes;
 	int inp_file_d;
 	int out_file_d;
-	struct stat statfile; 
+	struct stat statfile;
 	if (argc!=4) {
 		printf("Arguments required.\narchivator -glue/-unglue ");
 		printf("input_folder/input_file output_file/output_folder\n");
@@ -47,9 +47,10 @@ int main(int argc,char *argv[]) {
 			strcpy(foldername, argv[2]);
 			strcpy(filename, argv[3]);
 			dfd=opendir(foldername);
-			out_file_d=open(filename, O_RDWR|O_CREAT, S_IWUSR | S_IRUSR);
+			//out_file_d=open(filename, O_RDWR|O_CREAT, S_IWUSR | S_IRUSR);
+			out_file_d=creat(filename, S_IWUSR | S_IRUSR);
 			while((dp=readdir(dfd))!=NULL) {
-				if(strcmp(dp->d_name,".")!=0 && 
+				if(strcmp(dp->d_name,".")!=0 &&
 				strcmp(dp->d_name,"..")!=0) {
 					memset(absfilename,0,sizeof(absfilename));
 					sprintf(absfilename,"./%s/%s", foldername, dp->d_name);
@@ -160,7 +161,7 @@ char *inttobytes (int inp_number) {
 		s_inv[i]=s[pos];
 		i++;
 		pos--;
-	} while(pos!=-1);	
+	} while(pos!=-1);
 	char *outs;
 	outs=s_inv;
 	return outs;
