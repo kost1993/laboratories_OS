@@ -11,7 +11,7 @@ int main(int argc, char *argv[])
 {
 	if (argc > 1) {
 		int inp_fd, out_fd;
-		mkfifo(FIFO_NAME, 0600); 
+		mkfifo(FIFO_NAME, 0600);
 		out_fd = open(FIFO_NAME, O_WRONLY);
 		if (out_fd == -1) {
 			printf("Error open output file\n");
@@ -24,8 +24,10 @@ int main(int argc, char *argv[])
 		}
 		char buf[BUFSIZE];
 		int read_bytes, write_bytes;
-		while ((read_bytes = read(inp_fd, buf, BUFSIZE)) != 0) {
+		read_bytes = read(inp_fd, buf, BUFSIZE);
+		while (read_bytes != 0) {
 			write_bytes = write(out_fd, buf, read_bytes);
+			read_bytes = read(inp_fd, buf, BUFSIZE);
 		}
 		close(out_fd);
 		close(inp_fd);

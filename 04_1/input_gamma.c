@@ -24,7 +24,8 @@ int main(int argc, char *argv[])
 		}
 		char buf[BUFSIZE];
 		int read_bytes, write_bytes;
-		if ((read_bytes = read(inp_fd, buf, BUFSIZE)) != 0)
+		read_bytes = read(inp_fd, buf, BUFSIZE);
+		if (read_bytes != 0)
 			write_bytes = write(out_fd, buf, read_bytes);
 		close(out_fd);
 		close(inp_fd);

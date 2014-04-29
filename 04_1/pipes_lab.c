@@ -11,9 +11,6 @@
 
 int main(int argc, char *argv[])
 {
-	int pipedes[2];
-	pid_t pid[2];
-	char *newenviron[] = { NULL };
 	if (argc == 2) {
 		int in_fd[2], out_fd;
 		in_fd[0] = open(GAMMA_NAME, O_RDONLY);
@@ -23,7 +20,8 @@ int main(int argc, char *argv[])
 		}
 		int len_gamma_key;
 		unsigned long long int gamma_key;
-		if ((len_gamma_key = read(in_fd[0], &gamma_key, BUFSIZE)) == 0) {
+		len_gamma_key = read(in_fd[0], &gamma_key, BUFSIZE);
+		if (len_gamma_key == 0) {
 			printf("Error getting gamma key\n");
 			return 1;
 		}
@@ -37,9 +35,11 @@ int main(int argc, char *argv[])
 		out_fd = creat(argv[1], S_IWUSR | S_IRUSR);
 		int read_bytes;
 		unsigned long long int buf_llu;
-		while ((read_bytes = read(in_fd[1], &buf_llu, len_gamma_key)) != 0) {
+		read_bytes = read(in_fd[1], &buf_llu, len_gamma_key);
+		while (read_bytes != 0) {
 			buf_llu ^= gamma_key;
 			write(out_fd, &buf_llu, read_bytes);
+			read_bytes = read(in_fd[1], &buf_llu, len_gamma_key);
 		}
 		close(in_fd[1]);
 		unlink(SOURCE_NAME);
