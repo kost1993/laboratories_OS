@@ -3,8 +3,8 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <fcntl.h>
-
+#include <fcntl.h> /* open(), O_RDONLY, O_WRONLY */
+#include <unistd.h> /* read(), write(), close() */
 #define BUFSIZE 4096
 #define LEN_STR_NORM 80
 #define LEN_STR_RGB 5
