@@ -10,19 +10,19 @@
 
 #define BUFSIZE 4096
 #define LEN_STR_NORM 80
-#define OUTPUT_FORMAT 4
+#define OUTPUT_FORMAT 5
 
-struct RGB
-{
+struct RGB {
 	unsigned char R;
 	unsigned char G;
 	unsigned char B;
 };
 
-unsigned char** outPix;
-struct RGB** allPixRGB;
+unsigned char **outPix;
+struct RGB **allPixRGB;
 int width;
 int height;
+int brightness;
 int limit;
 pthread_t *id;
 int *massive_of_indexes_thread;
@@ -31,10 +31,10 @@ int *position_thread_end;
 
 int gy[3][3] = {{-1, -2, -1},
 		{0, 0, 0},
-		{1, 2, 1}};
+		{1, 2, 1} };
 int gx[3][3] = {{-1, 0, 1},
 		{-2, 0, 2},
-		{-1, 0, 1}};
+		{-1, 0, 1} };
 
 void *work(void *number);
 void free_mem();
@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
 	position_thread_start = malloc(sizeof(int) * ALLOWED_NUM_THREADS);
 	position_thread_end = malloc(sizeof(int) * ALLOWED_NUM_THREADS);
 	if (argc != 3) {
-		printf("Usage:\nsobel input_file.ppm output_file.pbm\n");
+		printf("Usage:\nsobel input_file.ppm output_file.pgm\n");
 		return 1;
 	}
 	int in_fd, out_fd;
@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
 		}
 		offset_start += strlen(buf);
 	}
-	
+
 	int count;
 	count = sscanf(buf, "%d %d", &width, &height);
 	if (count != 2) {
@@ -108,30 +108,29 @@ int main(int argc, char *argv[])
 	memset(buf, 0, BUFSIZE);
 	sprintf(buf, "%d %d\n", width - 2, height - 2);
 	write(out_fd, buf, strlen(buf));
-	int brightness;
 	memset(buf, 0, BUFSIZE);
-	if (fgets(buf, LEN_STR_NORM, in_stream) == NULL)  {	
+	if (fgets(buf, LEN_STR_NORM, in_stream) == NULL) {
 		printf("Cant get information about brightness\n");
 		return 1;
 	}
 	offset_start += strlen(buf);
 	count = sscanf(buf, "%d", &brightness);
-	/*write(out_fd, buf, strlen(buf));*/
+	write(out_fd, buf, strlen(buf));
 
 	int i, j;
-        limit = (brightness / 2) * (brightness / 2);
+	limit = (brightness / 2) * (brightness / 2);
 	int n_kk;
 	n_kk = 3;
 	int size_pic;
 	size_pic = width * height * n_kk;
 	unsigned char *allPix = (unsigned char *)malloc(size_pic * sizeof(unsigned char));
-	
+
 	allPixRGB = (struct RGB **)malloc(width * sizeof(struct RGB *));
-	for(i = 0; i < width; i++)
+	for (i = 0; i < width; i++)
 		allPixRGB[i] = (struct RGB *)malloc(height * sizeof(struct RGB));
-	
+
 	outPix = (unsigned char **)malloc((width - 2) * sizeof(unsigned char *));
-	for(i = 0; i < width - 2; i++)
+	for (i = 0; i < width - 2; i++)
 		outPix[i] = (unsigned char *)malloc((height - 2) * sizeof(unsigned char));
 	int offset_check;
 	offset_check = lseek(in_fd, offset_start, 0);
@@ -157,7 +156,7 @@ int main(int argc, char *argv[])
 		if (index_thread == 0)
 			position_thread_start[index_thread] = 1;
 		else
-			position_thread_start[index_thread] = 
+			position_thread_start[index_thread] =
 				position_thread_end[index_thread - 1];
 		if (index_thread == ALLOWED_NUM_THREADS - 1)
 			position_thread_end[index_thread] = height - 1;
@@ -193,7 +192,8 @@ int main(int argc, char *argv[])
 	memset(buf, 0, BUFSIZE);
 	for (j = 0; j < height - 2; j++) {
 		for (i = 0; i < width - 2; i++) {
-			rezult += outPix[i][j];
+			write(out_fd, &outPix[i][j], sizeof(char));
+			/*rezult += outPix[i][j];
 			if (index == size_rezult-1) {
 				write(out_fd, &rezult, sizeof(rezult));
 				rezult = 0;
@@ -201,23 +201,23 @@ int main(int argc, char *argv[])
 				continue;
 			}
 			rezult = rezult << 1;
-			index++;
+			index++;*/
 		}
-		while (index != size_rezult-1) {
+		/*while (index != size_rezult-1) {
 			rezult = rezult << 1;
 			index++;
 		}
 		write(out_fd, &rezult, sizeof(rezult));
 		rezult = 0;
-		index = 0;
+		index = 0;*/
 	}
 	write(out_fd, &rezult, sizeof(rezult));
 	close(out_fd);
-	for(i = 0; i < width - 2; i++)
+	for (i = 0; i < width - 2; i++)
 		free(outPix[i]);
 	free(outPix);
 	free(allPix);
-	for(i = 0; i < width; i++)
+	for (i = 0; i < width; i++)
 		free(allPixRGB[i]);
 	free(allPixRGB);
 	return 0;
@@ -241,8 +241,8 @@ void *work(void *number)
 	int wi, hw;
 	int i, j;
 	/*for (j = 1; j < height - 1; j++) {*/
-	
-	for (j = position_thread_start[local_index]; 
+
+	for (j = position_thread_start[local_index];
 	     j < position_thread_end[local_index]; j++) {
 		for (i = 1; i < width - 1; i++) {
 
@@ -266,12 +266,19 @@ void *work(void *number)
 					new_by += gy[wi + 1][hw + 1] * bc;
 				}
 			}
-			if (new_rx * new_rx + new_ry * new_ry > limit ||
+			rc = sqrt(new_rx * new_rx + new_ry * new_ry);
+			gc = sqrt(new_gx * new_gx + new_gy * new_gy);
+			bc = sqrt(new_bx * new_bx + new_by * new_by);
+			/*outPix[i - 1][j - 1] = 0.299 * rc + 0.587 * gc + 0.114 * bc;*/
+			outPix[i - 1][j - 1] = 0.2126 * rc + 0.7152 * gc + 0.0722 * bc;
+			if (outPix[i - 1][j - 1] > brightness)
+				outPix[i - 1][j - 1] = brightness;
+			/*if (new_rx * new_rx + new_ry * new_ry > limit ||
 				new_gx * new_gx + new_gy * new_gy > limit ||
 				new_bx * new_bx + new_by * new_by > limit)
-				outPix[i - 1][j - 1] = 0;
+				outPix[i - 1][j - 1] = 255;
 			else
-				outPix[i - 1][j - 1] = 1;
+				outPix[i - 1][j - 1] = 0;*/
 		}
 	}
 }
