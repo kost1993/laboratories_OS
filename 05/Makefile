@@ -1,5 +1,5 @@
 all:
-	gcc -o sobel sobel.c
+	gcc -o sobel sobel.c -lpthread -lm
 clean:
 	rm sobel
  
