@@ -1,0 +1,3 @@
+usage of programm
+use picture saved in *.ppm RAW format 
+$./sobel input.ppm output.pgm
