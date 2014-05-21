@@ -271,4 +271,5 @@ void *work(void *number)
 				outPix[j - 1][i - 1] = brightness;
 		}
 	}
+	pthread_exit(NULL);
 }
