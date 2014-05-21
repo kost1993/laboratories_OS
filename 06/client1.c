@@ -24,11 +24,13 @@ int main(int argc, char *argv[])
 	int read_bytes;
 	int send_bytes;
 
+	printf("Hello in custom Instant messenger.\n");
+	printf("Please use next format of messages:\n");
+	printf("Destination_nickname: Message\n");
 	printf("Please, enter your nickname: ");
 	scanf("%s", nickname);
-	/*printf("Your nickname: %s\n", nickname);*/
 	sock = socket(AF_INET, SOCK_STREAM, 0);
-	if(sock < 0) {
+	if (sock < 0) {
 		perror("socket");
 		exit(1);
 	}
@@ -46,14 +48,6 @@ int main(int argc, char *argv[])
 		exit(19);
 	}
 	send(sock, nickname, MAX_LENGTH_NICKNAME, 0);
-	/*char buf[1024];
-	int bytes_read;
-
-	addr.sin_addr.s_addr = htonl(INADDR_ANY);
-	if (bind(sock, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-		perror("bind");
-		exit(2);
-	}*/
 
 	memset(msg, 0, MSG_BUF_SIZE);
 	while (1) {
@@ -65,10 +59,7 @@ int main(int argc, char *argv[])
 			break;
 		}
 		memset(msg, 0, read_bytes);
-		/*buf[bytes_read] = '\0';
-		printf("%s", buf);*/
 	}
-	/*printf("Flag1\n");*/
 	pthread_kill(clnt_lstn, 0);
 	close(sock);
 	return 0;
@@ -83,17 +74,16 @@ void *work(void *number)
 	while (1) {
 		bytes_read = recv(sock, msg, MSG_BUF_SIZE, 0);
 		if (strncmp(msg, SRV_NAME, strlen(SRV_NAME)) == 0) {
-			/*printf("\n%s", msg);
-			fflush(stdout);*/
 			if (strncmp(msg + strlen(SRV_NAME) + 2,
 				EXIT_COMMAND, strlen(EXIT_COMMAND)) == 0) {
 				break;
 			}
-			/*printf("\n%s: ", nickname);
-			fflush(stdout);*/
-		} else {
 			printf("\n%s", msg);
 			printf("\n%s: ", nickname);
+			fflush(stdout);
+		} else {
+			printf("\n%s", msg);
+			printf("%s: ", nickname);
 			fflush(stdout);
 		}
 	}

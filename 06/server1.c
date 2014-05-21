@@ -14,9 +14,6 @@
 #define EXIT_COMMAND "!exit"
 #define CLOSE_SRV_COMMAND "!close"
 
-char msg1[] = "Hello there!\n";
-char msg2[] = "Bye bye!\n";
-
 char nicknames[MAX_CLIENTS][MAX_LENGTH_NICKNAME];
 int socks[MAX_CLIENTS];
 int listener;
@@ -29,7 +26,6 @@ void *work_serv_lstn(void *number);
 int main(int argc, char *argv[])
 {
 	pthread_t serv_lstn;
-	pthread_t serv_cmd;
 
 	if (pthread_create(&serv_lstn, NULL, work_serv_lstn, NULL)) {
 		printf("Error creat thread lstn\n");
@@ -40,7 +36,7 @@ int main(int argc, char *argv[])
 	int read_bytes;
 	memset(msg, 0, MSG_BUF_SIZE);
 	while (1) {
-		printf("%s: ",SRV_NAME);
+		printf("%s: ", SRV_NAME);
 		fflush(stdout);
 		read_bytes = read(0, msg, MSG_BUF_SIZE);
 		if (strncmp(msg, CLOSE_SRV_COMMAND, strlen(CLOSE_SRV_COMMAND)) == 0) {
@@ -66,18 +62,18 @@ void *work(void *number)
 {
 	int lcl_index = *(int *) number;
 	char msg[MSG_BUF_SIZE];
+	char msg_send[MSG_BUF_SIZE];
 	int bytes_read;
 	int send_bytes;
-	int chk_size;
 	int src_index;
 
 	memset(msg, 0, MSG_BUF_SIZE);
 	bytes_read = recv(socks[lcl_index], nicknames[lcl_index],
 		MAX_LENGTH_NICKNAME, 0);
 	printf("\n%s: connection established", nicknames[lcl_index]);
-	printf("\n%s: ",SRV_NAME);
+	printf("\n%s: ", SRV_NAME);
 	fflush(stdout);
-	sprintf(msg, "Server: Your nickname: %s", nicknames[lcl_index]);
+	sprintf(msg, "%s: Your nickname: %s", SRV_NAME, nicknames[lcl_index]);
 	send(socks[lcl_index], msg, MSG_BUF_SIZE, 0);
 	while (1) {
 		bytes_read = recv(socks[lcl_index], msg, MSG_BUF_SIZE, 0);
@@ -88,7 +84,7 @@ void *work(void *number)
 			break;
 		} else {
 			src_index = 0;
-			while (src_index < MAX_CLIENTS) {
+			while (src_index < index_thrd) {
 				if (src_index == lcl_index) {
 					src_index++;
 				} else {
@@ -99,22 +95,28 @@ void *work(void *number)
 					}
 				}
 			}
-			if (src_index != MAX_CLIENTS) {
+			if (src_index != index_thrd) {
 				printf("\n%s -> %s: %s", nicknames[lcl_index],
-					nicknames[src_index], msg + strlen(nicknames[src_index]) + 1);
-				send_bytes = send(socks[src_index],
-					msg + strlen(nicknames[src_index]) + 1,
+					nicknames[src_index], msg + strlen(nicknames[src_index]) + 2);
+				memset(msg_send, 0, MSG_BUF_SIZE);
+				sprintf(msg_send, "%s: %s", nicknames[lcl_index],
+					msg + strlen(nicknames[src_index]) + 2);
+				send_bytes = send(socks[src_index], msg_send,
 					MSG_BUF_SIZE, 0);
 			} else {
 				printf("\n%s: %s", nicknames[lcl_index], msg);
+				memset(msg_send, 0, MSG_BUF_SIZE);
+				sprintf(msg_send, "%s: Cant find required nickname", SRV_NAME);
+				send_bytes = send(socks[lcl_index], msg_send,
+					MSG_BUF_SIZE, 0);
 			}
-			printf("\n%s: ",SRV_NAME);
+			printf("%s: ", SRV_NAME);
 			fflush(stdout);
 		}
 	}
 	close(socks[lcl_index]);
 	printf("\n%s: connection closed", nicknames[lcl_index]);
-	printf("\n%s: ",SRV_NAME);
+	printf("\n%s: ", SRV_NAME);
 	fflush(stdout);
 	pthread_exit(NULL);
 }
@@ -125,7 +127,7 @@ void *work_serv_lstn(void *number)
 	int self_index[MAX_CLIENTS];
 
 	listener = socket(AF_INET, SOCK_STREAM, 0);
-	if(listener < 0) {
+	if (listener < 0) {
 		perror("socket");
 		exit(1);
 	}
@@ -139,9 +141,9 @@ void *work_serv_lstn(void *number)
 	}
 
 	index_thrd = 0;
-	printf("\n%s: ",SRV_NAME);
+	printf("\n%s: ", SRV_NAME);
 	printf("Start listen...");
-	printf("\n%s: ",SRV_NAME);
+	printf("\n%s: ", SRV_NAME);
 	fflush(stdout);
 	listen(listener, 1);
 	while (1) {
@@ -152,5 +154,9 @@ void *work_serv_lstn(void *number)
 			exit(19);
 		}
 		index_thrd++;
+		if (index_thrd == MAX_CLIENTS) {
+			break;
+		}
 	}
+	pthread_exit(NULL);
 }
